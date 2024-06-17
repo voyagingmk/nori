@@ -7,6 +7,7 @@
 #pragma once
 
 #include <nori/accel.h>
+#include <nori/bvh.h>
 
 NORI_NAMESPACE_BEGIN
 
@@ -61,7 +62,7 @@ public:
      * \return \c true if an intersection was found
      */
     bool rayIntersect(const Ray3f &ray, Intersection &its) const {
-        return m_accel->rayIntersect(ray, its, false);
+        return m_bvh->rayIntersect(ray, its, false);
     }
 
     /**
@@ -110,6 +111,7 @@ private:
     Sampler *m_sampler = nullptr;
     Camera *m_camera = nullptr;
     Accel *m_accel = nullptr;
+    BVH* m_bvh = nullptr;
 };
 
 NORI_NAMESPACE_END

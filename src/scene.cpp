@@ -14,17 +14,20 @@
 NORI_NAMESPACE_BEGIN
 
 Scene::Scene(const PropertyList &) {
-    m_accel = new Accel();
+	m_accel = new Accel();
+	m_bvh = new BVH();
 }
 
 Scene::~Scene() {
-    delete m_accel;
+	delete m_accel;
+	delete m_bvh;
     delete m_sampler;
     delete m_camera;
     delete m_integrator;
 }
 
 void Scene::activate() {
+	m_bvh->build();
     m_accel->build();
 
     if (!m_integrator)
@@ -46,7 +49,8 @@ void Scene::activate() {
 void Scene::addChild(NoriObject *obj) {
     switch (obj->getClassType()) {
         case EMesh: {
-                Mesh *mesh = static_cast<Mesh *>(obj);
+			    Mesh* mesh = static_cast<Mesh*>(obj);
+			    m_bvh->addShape(mesh);
                 m_accel->addMesh(mesh);
                 m_meshes.push_back(mesh);
             }

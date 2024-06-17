@@ -75,6 +75,48 @@ bool Mesh::rayIntersect(uint32_t index, const Ray3f &ray, float &u, float &v, fl
     return t >= ray.mint && t <= ray.maxt;
 }
 
+
+void Mesh::setHitInformation(uint32_t index, const Ray3f& ray, Intersection& its) const {
+    /* Find the barycentric coordinates */
+    Vector3f bary;
+    bary << 1 - its.uv.sum(), its.uv;
+
+    /* Vertex indices of the triangle */
+    uint32_t idx0 = m_F(0, index), idx1 = m_F(1, index), idx2 = m_F(2, index);
+
+    Point3f p0 = m_V.col(idx0), p1 = m_V.col(idx1), p2 = m_V.col(idx2);
+
+    /* Compute the intersection positon accurately
+       using barycentric coordinates */
+    its.p = bary.x() * p0 + bary.y() * p1 + bary.z() * p2;
+
+    /* Compute proper texture coordinates if provided by the mesh */
+    if (m_UV.size() > 0)
+        its.uv = bary.x() * m_UV.col(idx0) +
+        bary.y() * m_UV.col(idx1) +
+        bary.z() * m_UV.col(idx2);
+
+    /* Compute the geometry frame */
+    its.geoFrame = Frame((p1 - p0).cross(p2 - p0).normalized());
+
+    if (m_N.size() > 0) {
+        /* Compute the shading frame. Note that for simplicity,
+           the current implementation doesn't attempt to provide
+           tangents that are continuous across the surface. That
+           means that this code will need to be modified to be able
+           use anisotropic BRDFs, which need tangent continuity */
+
+        its.shFrame = Frame(
+            (bary.x() * m_N.col(idx0) +
+                bary.y() * m_N.col(idx1) +
+                bary.z() * m_N.col(idx2)).normalized());
+    }
+    else {
+        its.shFrame = its.geoFrame;
+    }
+}
+
+
 BoundingBox3f Mesh::getBoundingBox(uint32_t index) const {
     BoundingBox3f result(m_V.col(m_F(0, index)));
     result.expandBy(m_V.col(m_F(1, index)));

@@ -67,6 +67,9 @@ public:
     /// Initialize internal data structures (called once by the XML parser)
     virtual void activate();
 
+	/// Return the total number of triangles in this shape
+	virtual uint32_t getPrimitiveCount() const { return (uint32_t)m_F.cols(); }
+
     /// Return the total number of triangles in this shape
     uint32_t getTriangleCount() const { return (uint32_t) m_F.cols(); }
 
@@ -111,6 +114,9 @@ public:
      *   \c true if an intersection has been detected
      */
     bool rayIntersect(uint32_t index, const Ray3f &ray, float &u, float &v, float &t) const;
+
+	/// Set intersection information: hit point, shading frame, UVs
+	virtual void setHitInformation(uint32_t index, const Ray3f& ray, Intersection& its) const;
 
     /// Return a pointer to the vertex positions
     const MatrixXf &getVertexPositions() const { return m_V; }
