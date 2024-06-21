@@ -1,5 +1,6 @@
 #include <nori/integrator.h>
 #include <nori/scene.h>
+#include <nori/warp.h>
 
 NORI_NAMESPACE_BEGIN
 
@@ -19,25 +20,20 @@ public:
 		if (!scene->rayIntersect(ray, its))
 			return Color3f(0.0f);
 
-		Color3f radiance(0.f);
+		Color3f color(0.f);
 		Point3f p = its.p;
-		Vector3f wi = (m_lightPosition - p).normalized();
+		Point2f sample = sampler->next2D();
+		Vector3f wi = Warp::squareToCosineHemisphere(sample);
+		float cosTheta = wi.z();
+		float pdf = Warp::squareToCosineHemispherePdf(wi);
+		wi = its.shFrame.toWorld(wi);
 		float V = 1.f;
 		if (scene->rayIntersect(Ray3f(p + wi * (1e-5), wi), its))
 			V = 0.f;
-		float cosTheta = its.shFrame.n.dot(wi); // same with its.shFrame.cosTheta(its.shFrame.toLocal(wi)) 
-		radiance += V * (m_lightEnerry / (4 * pow(M_PI, 2))) * std::max(0.f, cosTheta) / (p - m_lightPosition).dot(p - m_lightPosition);
-		return radiance;
-		
-		/* Find the surface that is visible in the requested direction */
-		//Intersection its;
-		//if (!scene->rayIntersect(ray, its))
-		//	return Color3f(0.0f);
-
-		///* Return the component-wise absolute
-		//   value of the shading normal as a color */
-		//Normal3f n = its.shFrame.n.cwiseAbs();
-		//return Color3f(n.x(), n.y(), n.z());
+		color += V * cosTheta * INV_PI / pdf;
+		// if (fabs(1 - cosTheta * INV_PI / pdf) > 1e-5)
+		//     std::cout << "dif" << std::endl;
+		return color;
 	}
 
 	/// Return a human-readable description for debugging purposes
