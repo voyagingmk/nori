@@ -8,6 +8,7 @@
 
 #include <nori/accel.h>
 #include <nori/bvh.h>
+#include <nori/emitter.h>
 
 NORI_NAMESPACE_BEGIN
 
@@ -27,7 +28,7 @@ public:
     virtual ~Scene();
 
     /// Return a pointer to the scene's kd-tree
-    const Accel *getAccel() const { return m_accel; }
+    //const Accel *getAccel() const { return m_accel; }
 
     /// Return a pointer to the scene's integrator
     const Integrator *getIntegrator() const { return m_integrator; }
@@ -47,6 +48,28 @@ public:
     /// Return a reference to an array containing all meshes
     const std::vector<Mesh *> &getMeshes() const { return m_meshes; }
 
+	/// Return a reference to an array containing all lights
+	const std::vector<Emitter*>& getLights() const { return m_emitters; }
+
+    /// Return a random emitter
+	const Emitter* getRandomEmitter(float rnd) const {
+		auto const& n = m_emitters.size();
+		size_t index = std::min(
+			static_cast<size_t>(std::floor(n * rnd)),
+			n - 1);
+		return m_emitters[index];
+	}
+
+	const Emitter* getEnvLight() const {
+		for (int i = 0; i < m_emitters.size(); ++i) {
+			std::string s1 = m_emitters[i]->toString();
+			std::string s2 = "EnvironmentLight";
+			if (s1.find(s2) != std::string::npos) {
+				return m_emitters[i];
+			}
+		}
+		return nullptr;
+	}
     /**
      * \brief Intersect a ray against all triangles stored in the scene
      * and return detailed intersection information
@@ -82,12 +105,12 @@ public:
      */
     bool rayIntersect(const Ray3f &ray) const {
         Intersection its; /* Unused */
-        return m_accel->rayIntersect(ray, its, true);
+        return m_bvh->rayIntersect(ray, its, true);
     }
 
     /// \brief Return an axis-aligned box that bounds the scene
     const BoundingBox3f &getBoundingBox() const {
-        return m_accel->getBoundingBox();
+        return m_bvh->getBoundingBox();
     }
 
     /**
@@ -110,8 +133,9 @@ private:
     Integrator *m_integrator = nullptr;
     Sampler *m_sampler = nullptr;
     Camera *m_camera = nullptr;
-    Accel *m_accel = nullptr;
-    BVH* m_bvh = nullptr;
+   // Accel *m_accel = nullptr;
+	BVH* m_bvh = nullptr;
+	std::vector<Emitter*> m_emitters;
 };
 
 NORI_NAMESPACE_END

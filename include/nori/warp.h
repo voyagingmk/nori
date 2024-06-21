@@ -32,6 +32,8 @@ public:
     /// Probability density of \ref squareToUniformDisk()
     static float squareToUniformDiskPdf(const Point2f &p);
 
+	static Vector3f squareToUniformTriangle(const Point2f& sample);
+
     /// Uniformly sample a vector on the unit sphere with respect to solid angles
     static Vector3f squareToUniformSphere(const Point2f &sample);
 

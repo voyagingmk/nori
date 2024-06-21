@@ -9,8 +9,36 @@
 #include <nori/object.h>
 #include <nori/frame.h>
 #include <nori/bbox.h>
+#include <nori/dpdf.h>
 
 NORI_NAMESPACE_BEGIN
+
+
+
+/**
+ * \brief Data record for conveniently querying and sampling the
+ * a point on a shape
+ */
+    struct ShapeQueryRecord {
+    /// Reference point
+    Point3f ref;
+    /// Sampled point
+    Point3f p;
+    /// Sampled normal
+    Normal3f n;
+    /// Probability of the sample
+    float pdf;
+
+    /// Empty constructor
+    ShapeQueryRecord() {}
+    /// Data structure with ref to call sampleSurface()
+    ShapeQueryRecord(const Point3f& ref_) : ref(ref_) {}
+    /// Data structure with ref and p to call pdfSurface()
+    ShapeQueryRecord(const Point3f& ref_, const Point3f& p_) : ref(ref_), p(p_) {}
+
+};
+
+
 
 /**
  * \brief Intersection data structure
@@ -81,6 +109,17 @@ public:
 
     //// Return an axis-aligned bounding box of the entire mesh
     const BoundingBox3f &getBoundingBox() const { return m_bbox; }
+
+    /**
+     * \brief Uniformly sample a position on the mesh with
+     * respect to surface area.
+     */
+    virtual void sampleSurface(ShapeQueryRecord& sRec, const Point2f& sample) const;
+    virtual float pdfSurface(const ShapeQueryRecord& sRec) const;
+
+
+	Point3f getInterpolatedVertex(uint32_t index, const Vector3f& bc) const;
+	Normal3f getInterpolatedNormal(uint32_t index, const Vector3f& bc) const;
 
     //// Return an axis-aligned bounding box containing the given triangle
     BoundingBox3f getBoundingBox(uint32_t index) const;
@@ -169,7 +208,8 @@ protected:
     MatrixXu      m_F;                   ///< Faces
     BSDF         *m_bsdf = nullptr;      ///< BSDF of the surface
     Emitter    *m_emitter = nullptr;     ///< Associated emitter, if any
-    BoundingBox3f m_bbox;                ///< Bounding box of the mesh
+	BoundingBox3f m_bbox;                ///< Bounding box of the mesh
+	DiscretePDF m_pdf;
 };
 
 NORI_NAMESPACE_END

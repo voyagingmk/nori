@@ -109,8 +109,10 @@ static void render(Scene *scene, const std::string &filename) {
             }
         };
 
+        map(range);
+
         /// Default: parallel rendering
-        tbb::parallel_for(range, map);
+      //  tbb::parallel_for(range, map);
 
         /// (equivalent to the following single-threaded call)
         // map(range);

@@ -14,21 +14,24 @@
 NORI_NAMESPACE_BEGIN
 
 Scene::Scene(const PropertyList &) {
-	m_accel = new Accel();
+	//m_accel = new Accel();
 	m_bvh = new BVH();
 }
 
 Scene::~Scene() {
-	delete m_accel;
+	//delete m_accel;
 	delete m_bvh;
     delete m_sampler;
     delete m_camera;
-    delete m_integrator;
+	delete m_integrator;
+	for (auto e : m_emitters)
+		delete e;
+	m_emitters.clear();
 }
 
 void Scene::activate() {
 	m_bvh->build();
-    m_accel->build();
+   // m_accel->build();
 
     if (!m_integrator)
         throw NoriException("No integrator was specified!");
@@ -51,15 +54,15 @@ void Scene::addChild(NoriObject *obj) {
         case EMesh: {
 			    Mesh* mesh = static_cast<Mesh*>(obj);
 			    m_bvh->addShape(mesh);
-                m_accel->addMesh(mesh);
-                m_meshes.push_back(mesh);
+               // m_accel->addMesh(mesh);
+				m_meshes.push_back(mesh);
+				if (mesh->isEmitter())
+					m_emitters.push_back(mesh->getEmitter());
             }
             break;
         
-        case EEmitter: {
-                //Emitter *emitter = static_cast<Emitter *>(obj);
-                /* TBD */
-                throw NoriException("Scene::addChild(): You need to implement this for emitters");
+		case EEmitter: {
+			    m_emitters.push_back(static_cast<Emitter*>(obj));
             }
             break;
 
@@ -96,17 +99,28 @@ std::string Scene::toString() const {
         meshes += "\n";
     }
 
+	std::string lights;
+	for (size_t i = 0; i < m_emitters.size(); ++i) {
+		lights += std::string("  ") + indent(m_emitters[i]->toString(), 2);
+		if (i + 1 < m_emitters.size())
+			lights += ",";
+		lights += "\n";
+	}
+
     return tfm::format(
         "Scene[\n"
         "  integrator = %s,\n"
         "  sampler = %s\n"
-        "  camera = %s,\n"
+		"  camera = %s,\n"
+		"  emitters = {\n"
+		"  %s  }\n"
         "  meshes = {\n"
         "  %s  }\n"
         "]",
         indent(m_integrator->toString()),
         indent(m_sampler->toString()),
-        indent(m_camera->toString()),
+		indent(m_camera->toString()),
+		indent(lights, 2),
         indent(meshes, 2)
     );
 }

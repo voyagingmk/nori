@@ -40,6 +40,12 @@ float Warp::squareToUniformDiskPdf(const Point2f& p) {
 }
 
 
+Vector3f Warp::squareToUniformTriangle(const Point2f& sample) {
+	float su1 = sqrtf(sample.x());
+	float u = 1.f - su1, v = sample.y() * su1;
+	return Vector3f(u, v, 1.f - u - v);
+}
+
 Vector3f Warp::squareToUniformSphere(const Point2f& sample)
 {
 	float xi1 = sample.x(), xi2 = sample.y();

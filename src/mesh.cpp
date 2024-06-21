@@ -26,6 +26,12 @@ void Mesh::activate() {
         m_bsdf = static_cast<BSDF *>(
             NoriObjectFactory::createInstance("diffuse", PropertyList()));
     }
+
+	m_pdf.reserve(getPrimitiveCount());
+	for (uint32_t i = 0; i < getPrimitiveCount(); ++i) {
+		m_pdf.append(surfaceArea(i));
+	}
+	m_pdf.normalize();
 }
 
 float Mesh::surfaceArea(uint32_t index) const {
@@ -115,7 +121,40 @@ void Mesh::setHitInformation(uint32_t index, const Ray3f& ray, Intersection& its
         its.shFrame = its.geoFrame;
     }
 }
+void Mesh::sampleSurface(ShapeQueryRecord& sRec, const Point2f& sample) const {
+	Point2f s = sample;
+	size_t idT = m_pdf.sampleReuse(s.x());
 
+	Vector3f bc = Warp::squareToUniformTriangle(s);
+
+	sRec.p = getInterpolatedVertex(idT, bc);
+	if (m_N.size() > 0) {
+		sRec.n = getInterpolatedNormal(idT, bc);
+	}
+	else {
+		Point3f p0 = m_V.col(m_F(0, idT));
+		Point3f p1 = m_V.col(m_F(1, idT));
+		Point3f p2 = m_V.col(m_F(2, idT));
+		Normal3f n = (p1 - p0).cross(p2 - p0).normalized();
+		sRec.n = n;
+	}
+	sRec.pdf = m_pdf.getNormalization();
+}
+float Mesh::pdfSurface(const ShapeQueryRecord& sRec) const {
+	return m_pdf.getNormalization();
+}
+
+Point3f Mesh::getInterpolatedVertex(uint32_t index, const Vector3f& bc) const {
+	return (bc.x() * m_V.col(m_F(0, index)) +
+		bc.y() * m_V.col(m_F(1, index)) +
+		bc.z() * m_V.col(m_F(2, index)));
+}
+
+Normal3f Mesh::getInterpolatedNormal(uint32_t index, const Vector3f& bc) const {
+	return (bc.x() * m_N.col(m_F(0, index)) +
+		bc.y() * m_N.col(m_F(1, index)) +
+		bc.z() * m_N.col(m_F(2, index))).normalized();
+}
 
 BoundingBox3f Mesh::getBoundingBox(uint32_t index) const {
     BoundingBox3f result(m_V.col(m_F(0, index)));
@@ -146,6 +185,7 @@ void Mesh::addChild(NoriObject *obj) {
                     throw NoriException(
                         "Mesh: tried to register multiple Emitter instances!");
                 m_emitter = emitter;
+                m_emitter->setShape(this);
             }
             break;
 
